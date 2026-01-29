@@ -1,3 +1,3 @@
-from .models import Base, Zone, Reading, PumpEvent
+from .models import Base, Zone, Reading, PumpEvent, AlertEvent
 
-__all__ = ["Base", "Zone", "Reading", "PumpEvent"]
+__all__ = ["Base", "Zone", "Reading", "PumpEvent", "AlertEvent"]

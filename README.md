@@ -21,6 +21,14 @@ Raspberry Pi soil moisture monitoring and automated watering with a local React 
 ### Run frontend tests
 `npm run test -- --run`
 
+## Docker Compose
+Build and run everything with Docker:
+`docker compose up --build`
+
+- Frontend: http://localhost:8080
+- Backend: http://localhost:8000
+
 ## Notes
 - Sensor readings are simulated by default. Set `SIMULATE_SENSORS=false` to use ADS1115 on the Pi.
+- Pump control is simulated by default on Windows. Set `SIMULATE_PUMPS=false` on the Pi.
 - Update GPIO pins in the zone configuration once hardware is connected.

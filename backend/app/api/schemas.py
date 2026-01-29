@@ -10,6 +10,7 @@ class ZoneOut(BaseModel):
     threshold: int
     hysteresis: int
     cooldown_hours: int
+    water_duration_sec: int
     sensor_channel: int
     pump_gpio: Optional[int]
     enabled: bool
@@ -23,8 +24,20 @@ class ZoneUpdate(BaseModel):
     threshold: Optional[int] = None
     hysteresis: Optional[int] = None
     cooldown_hours: Optional[int] = None
+    water_duration_sec: Optional[int] = None
     pump_gpio: Optional[int] = None
     enabled: Optional[bool] = None
+
+
+class ZoneCreate(BaseModel):
+    name: str
+    threshold: int
+    hysteresis: int
+    cooldown_hours: int
+    water_duration_sec: int
+    sensor_channel: int
+    pump_gpio: Optional[int] = None
+    enabled: bool = True
 
 
 class ReadingOut(BaseModel):
@@ -49,6 +62,19 @@ class PumpEventOut(BaseModel):
         from_attributes = True
 
 
+class AlertEventOut(BaseModel):
+    id: int
+    zone_id: int
+    alert_type: str
+    message: str
+    created_at: datetime
+    acknowledged: bool
+    acknowledged_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
 class StatusItem(BaseModel):
     zone: ZoneOut
     latest_reading: Optional[ReadingOut]
@@ -56,4 +82,4 @@ class StatusItem(BaseModel):
 
 
 class ManualWaterRequest(BaseModel):
-    duration_sec: int = Field(default=10, ge=1, le=600)
+    duration_sec: Optional[int] = Field(default=None, ge=1, le=600)

@@ -8,18 +8,21 @@ import useInterval from "../hooks/useInterval";
 export default function History() {
   const [zones, setZones] = useState([]);
   const [readings, setReadings] = useState([]);
+  const [pumpEvents, setPumpEvents] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [zonesRes, readingsRes] = await Promise.all([
+      const [zonesRes, readingsRes, pumpRes] = await Promise.all([
         client.get("/api/zones"),
         client.get("/api/readings"),
+        client.get("/api/pump-events"),
       ]);
       setZones(zonesRes.data);
       setReadings(readingsRes.data);
+      setPumpEvents(pumpRes.data);
       setError("");
     } catch (err) {
       setError("Unable to load history.");
@@ -48,6 +51,10 @@ export default function History() {
       };
     });
   }, [zones, readings]);
+
+  const zoneById = useMemo(() => {
+    return new Map(zones.map((zone) => [zone.id, zone.name]));
+  }, [zones]);
 
   const chartOption = {
     tooltip: { trigger: "axis" },
@@ -83,6 +90,43 @@ export default function History() {
           <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
             <CardContent>
               <ReactECharts option={chartOption} style={{ height: 360 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12}>
+          <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider" }}>
+            <CardContent>
+              <Box sx={{ fontWeight: 600, mb: 2 }}>Recent pump events</Box>
+              <Box sx={{ display: "grid", gap: 1 }}>
+                {pumpEvents.length === 0 && (
+                  <Box style={{ color: "#8b92a1" }}>No pump events yet.</Box>
+                )}
+                {pumpEvents.slice(0, 20).map((event) => (
+                  <Box
+                    key={event.id}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Box>
+                      <Box sx={{ fontWeight: 600 }}>
+                        {zoneById.get(event.zone_id) || `Zone ${event.zone_id}`}
+                      </Box>
+                      <Box style={{ color: "#8b92a1" }}>
+                        {event.action} • {event.reason}
+                      </Box>
+                      <Box style={{ color: "#8b92a1" }}>
+                        {new Date(event.created_at).toLocaleString()}
+                      </Box>
+                    </Box>
+                    <Box style={{ color: "#8b92a1" }}>
+                      {event.duration_sec ? `${event.duration_sec}s` : "—"}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
             </CardContent>
           </Card>
         </Grid>

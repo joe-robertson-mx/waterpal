@@ -10,6 +10,10 @@ class Settings:
     max_pump_seconds: int = int(os.getenv("MAX_PUMP_SECONDS", "30"))
     cooldown_hours: int = int(os.getenv("COOLDOWN_HOURS", "4"))
     simulate_sensors: bool = os.getenv("SIMULATE_SENSORS", "true").lower() == "true"
+    simulate_pumps: bool = os.getenv(
+        "SIMULATE_PUMPS",
+        "true" if os.name == "nt" else "false",
+    ).lower() == "true"
 
 
 settings = Settings()

@@ -5,10 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from app.api.schemas import ManualWaterRequest, PumpEventOut, ReadingOut, StatusItem, ZoneOut, ZoneUpdate
+from app.api.schemas import (
+    AlertEventOut,
+    ManualWaterRequest,
+    PumpEventOut,
+    ReadingOut,
+    StatusItem,
+    ZoneCreate,
+    ZoneOut,
+    ZoneUpdate,
+)
 from app.config import settings
 from app.db.session import SessionLocal
-from app.models import PumpEvent, Reading, Zone
+from app.models import AlertEvent, PumpEvent, Reading, Zone
 from app.services.monitoring import run_monitoring_cycle
 
 router = APIRouter(prefix="/api")
@@ -27,6 +36,15 @@ def list_zones(db: Session = Depends(get_db)):
     return db.query(Zone).order_by(Zone.id).all()
 
 
+@router.post("/zones", response_model=ZoneOut, status_code=201)
+def create_zone(payload: ZoneCreate, db: Session = Depends(get_db)):
+    zone = Zone(**payload.model_dump())
+    db.add(zone)
+    db.commit()
+    db.refresh(zone)
+    return zone
+
+
 @router.patch("/zones/{zone_id}", response_model=ZoneOut)
 def update_zone(zone_id: int, payload: ZoneUpdate, db: Session = Depends(get_db)):
     zone = db.query(Zone).filter(Zone.id == zone_id).first()
@@ -39,6 +57,16 @@ def update_zone(zone_id: int, payload: ZoneUpdate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(zone)
     return zone
+
+
+@router.delete("/zones/{zone_id}", status_code=204)
+def delete_zone(zone_id: int, db: Session = Depends(get_db)):
+    zone = db.query(Zone).filter(Zone.id == zone_id).first()
+    if not zone:
+        raise HTTPException(status_code=404, detail="Zone not found")
+    db.delete(zone)
+    db.commit()
+    return None
 
 
 @router.post("/zones/{zone_id}/water", response_model=PumpEventOut)
@@ -54,7 +82,8 @@ def manual_water(
     if not zone.enabled:
         raise HTTPException(status_code=400, detail="Zone disabled")
 
-    max_duration = min(payload.duration_sec, settings.max_pump_seconds)
+    requested_duration = payload.duration_sec or zone.water_duration_sec
+    max_duration = min(requested_duration, settings.max_pump_seconds)
     pump_controller = request.app.state.pump_controller
     ran = pump_controller.run(zone.pump_gpio, max_duration)
 
@@ -85,6 +114,59 @@ def list_readings(
     if end is not None:
         query = query.filter(Reading.created_at <= end)
     return query.order_by(desc(Reading.created_at)).limit(500).all()
+
+
+@router.get("/pump-events", response_model=List[PumpEventOut])
+def list_pump_events(
+    zone_id: Optional[int] = None,
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(PumpEvent)
+    if zone_id is not None:
+        query = query.filter(PumpEvent.zone_id == zone_id)
+    if start is not None:
+        query = query.filter(PumpEvent.created_at >= start)
+    if end is not None:
+        query = query.filter(PumpEvent.created_at <= end)
+    return query.order_by(desc(PumpEvent.created_at)).limit(500).all()
+
+
+@router.get("/alerts", response_model=List[AlertEventOut])
+def list_alerts(
+    zone_id: Optional[int] = None,
+    alert_type: Optional[str] = None,
+    acknowledged: Optional[bool] = None,
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(AlertEvent)
+    if zone_id is not None:
+        query = query.filter(AlertEvent.zone_id == zone_id)
+    if alert_type is not None:
+        query = query.filter(AlertEvent.alert_type == alert_type)
+    if acknowledged is not None:
+        query = query.filter(AlertEvent.acknowledged == acknowledged)
+    if start is not None:
+        query = query.filter(AlertEvent.created_at >= start)
+    if end is not None:
+        query = query.filter(AlertEvent.created_at <= end)
+    return query.order_by(desc(AlertEvent.created_at)).limit(200).all()
+
+
+@router.post("/alerts/{alert_id}/ack", response_model=AlertEventOut)
+def acknowledge_alert(alert_id: int, db: Session = Depends(get_db)):
+    alert = db.query(AlertEvent).filter(AlertEvent.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    if not alert.acknowledged:
+        alert.acknowledged = True
+        alert.acknowledged_at = datetime.utcnow()
+        db.commit()
+    db.refresh(alert)
+    return alert
 
 
 @router.get("/status", response_model=List[StatusItem])
@@ -119,3 +201,13 @@ def run_cycle(request: Request, db: Session = Depends(get_db)):
     sensor_manager = request.app.state.sensor_manager
     pump_controller = request.app.state.pump_controller
     return run_monitoring_cycle(db, sensor_manager, pump_controller)
+
+
+@router.post("/reset-db")
+def reset_db(db: Session = Depends(get_db)):
+    db.query(AlertEvent).delete()
+    db.query(PumpEvent).delete()
+    db.query(Reading).delete()
+    db.query(Zone).delete()
+    db.commit()
+    return {"status": "reset"}

@@ -105,6 +105,9 @@ export default function Dashboard() {
                   <Typography variant="body2" color="text.secondary">
                     Threshold {item.zone.threshold} • Cooldown {item.zone.cooldown_hours}h
                   </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Water time {item.zone.water_duration_sec}s
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Last pump {item.last_pump_event?.created_at ?? "—"}
                   </Typography>

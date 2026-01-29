@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.api.router import router as api_router
 from app.config import settings
-from app.db.init_db import init_db, seed_zones
+from app.db.init_db import init_db
 from app.db.session import SessionLocal, engine
 from app.services.monitoring import run_monitoring_cycle
 from app.services.pump_controller import PumpController
@@ -26,11 +26,6 @@ app.include_router(api_router)
 @app.on_event("startup")
 def on_startup() -> None:
     init_db(engine)
-    db = SessionLocal()
-    try:
-        seed_zones(db)
-    finally:
-        db.close()
 
     app.state.sensor_manager = SensorManager()
     app.state.pump_controller = PumpController()

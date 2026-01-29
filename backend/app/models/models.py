@@ -13,12 +13,14 @@ class Zone(Base):
     threshold = Column(Integer, nullable=False)
     hysteresis = Column(Integer, nullable=False)
     cooldown_hours = Column(Integer, nullable=False)
+    water_duration_sec = Column(Integer, nullable=False, default=30)
     sensor_channel = Column(Integer, nullable=False)
     pump_gpio = Column(Integer, nullable=True)
     enabled = Column(Boolean, default=True)
 
     readings = relationship("Reading", back_populates="zone")
     pump_events = relationship("PumpEvent", back_populates="zone")
+    alert_events = relationship("AlertEvent", back_populates="zone")
 
 
 class Reading(Base):
@@ -43,3 +45,17 @@ class PumpEvent(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     zone = relationship("Zone", back_populates="pump_events")
+
+
+class AlertEvent(Base):
+    __tablename__ = "alert_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    zone_id = Column(Integer, ForeignKey("zones.id"))
+    alert_type = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    acknowledged = Column(Boolean, default=False)
+    acknowledged_at = Column(DateTime, nullable=True)
+
+    zone = relationship("Zone", back_populates="alert_events")

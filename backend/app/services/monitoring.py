@@ -7,7 +7,7 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import PumpEvent, Reading, Zone
+from app.models import AlertEvent, PumpEvent, Reading, Zone
 from app.services.pump_controller import PumpController
 from app.services.sensor_manager import SensorManager
 
@@ -31,6 +31,8 @@ def run_monitoring_cycle(
         db.add(reading)
         readings_saved += 1
 
+        _maybe_alert_low_moisture(db, zone, value, now)
+
         last_event = (
             db.query(PumpEvent)
             .filter(PumpEvent.zone_id == zone.id)
@@ -41,7 +43,8 @@ def run_monitoring_cycle(
         if not _should_water(zone, value, last_event, now):
             continue
 
-        ran = pump_controller.run(zone.pump_gpio, settings.max_pump_seconds)
+        duration = min(zone.water_duration_sec, settings.max_pump_seconds)
+        ran = pump_controller.run(zone.pump_gpio, duration)
         if ran:
             pumps_run += 1
             db.add(
@@ -49,7 +52,15 @@ def run_monitoring_cycle(
                     zone_id=zone.id,
                     action="auto",
                     reason="threshold",
-                    duration_sec=settings.max_pump_seconds,
+                    duration_sec=duration,
+                )
+            )
+        else:
+            db.add(
+                AlertEvent(
+                    zone_id=zone.id,
+                    alert_type="pump_failed",
+                    message="Pump failed to run during automatic cycle.",
                 )
             )
 
@@ -69,3 +80,27 @@ def _should_water(zone: Zone, value: int, last_event: PumpEvent | None, now: dat
         return False
 
     return True
+
+
+def _maybe_alert_low_moisture(db: Session, zone: Zone, value: int, now: datetime) -> None:
+    if value >= zone.threshold:
+        return
+
+    last_alert = (
+        db.query(AlertEvent)
+        .filter(AlertEvent.zone_id == zone.id, AlertEvent.alert_type == "low_moisture")
+        .order_by(desc(AlertEvent.created_at))
+        .first()
+    )
+
+    cooldown = timedelta(hours=zone.cooldown_hours)
+    if last_alert and now - last_alert.created_at < cooldown:
+        return
+
+    db.add(
+        AlertEvent(
+            zone_id=zone.id,
+            alert_type="low_moisture",
+            message=f"Moisture reading {value} below threshold {zone.threshold}.",
+        )
+    )
