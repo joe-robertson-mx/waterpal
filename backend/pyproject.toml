@@ -1,0 +1,25 @@
+[project]
+name = "waterpal-backend"
+version = "0.1.0"
+description = "Backend service for Raspberry Pi soil moisture monitoring and pump control."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn==0.30.6",
+    "sqlalchemy==2.0.30",
+    "apscheduler==3.10.4",
+    "pydantic==2.8.2",
+    "gpiozero==2.0.1",
+    "smbus2==0.5.0",
+]
+
+[tool.uv]
+package = false
+dev-dependencies = [
+    "pytest==8.3.4",
+    "httpx==0.27.2",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

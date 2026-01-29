@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+*.db
+backend/.venv/
+backend/waterpal.db
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+.env
+.vscode/

@@ -1,0 +1,2 @@
+## Deprecated: dependencies are managed in pyproject.toml via uv.
+## This file is kept for compatibility only.
