@@ -1,5 +1,6 @@
 services:
   backend:
+    image: ${DOCKERHUB_USERNAME:-your-dockerhub}/waterpal-backend:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -13,6 +14,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: ${DOCKERHUB_USERNAME:-your-dockerhub}/waterpal-frontend:${IMAGE_TAG:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
