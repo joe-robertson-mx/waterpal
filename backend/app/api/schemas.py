@@ -81,5 +81,12 @@ class StatusItem(BaseModel):
     last_pump_event: Optional[PumpEventOut]
 
 
+class TestReadingOut(BaseModel):
+    zone: ZoneOut
+    value: Optional[int]
+    status: str
+    message: Optional[str] = None
+
+
 class ManualWaterRequest(BaseModel):
     duration_sec: Optional[int] = Field(default=None, ge=1, le=600)

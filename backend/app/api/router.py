@@ -11,6 +11,7 @@ from app.api.schemas import (
     PumpEventOut,
     ReadingOut,
     StatusItem,
+    TestReadingOut,
     ZoneCreate,
     ZoneOut,
     ZoneUpdate,
@@ -194,6 +195,31 @@ def get_status(db: Session = Depends(get_db)):
             )
         )
     return status_items
+
+
+@router.get("/test-readings", response_model=List[TestReadingOut])
+def test_readings(request: Request, db: Session = Depends(get_db)):
+    sensor_manager = request.app.state.sensor_manager
+    zones = db.query(Zone).order_by(Zone.id).all()
+    results: List[TestReadingOut] = []
+
+    for zone in zones:
+        value = sensor_manager.read_channel(zone.sensor_channel)
+        if value is None:
+            results.append(
+                TestReadingOut(
+                    zone=zone,
+                    value=None,
+                    status="error",
+                    message="Unable to read sensor channel.",
+                )
+            )
+        else:
+            results.append(
+                TestReadingOut(zone=zone, value=value, status="ok")
+            )
+
+    return results
 
 
 @router.post("/run-cycle")

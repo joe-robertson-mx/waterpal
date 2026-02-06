@@ -11,6 +11,7 @@ dependencies = [
     "apscheduler==3.10.4",
     "pydantic==2.8.2",
     "gpiozero==2.0.1",
+    "explorerhat==0.8.0",
     "smbus2==0.5.0",
 ]
 

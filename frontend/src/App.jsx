@@ -12,6 +12,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import SettingsIcon from "@mui/icons-material/Settings";
 import TuneIcon from "@mui/icons-material/Tune";
+import SensorsIcon from "@mui/icons-material/Sensors";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import NavItem from "./components/NavItem";
@@ -19,6 +20,7 @@ import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Zones from "./pages/Zones";
 import System from "./pages/System";
+import Connections from "./pages/Connections";
 
 const drawerWidth = 260;
 
@@ -62,6 +64,7 @@ export default function App() {
             <List>
               <NavItem to="/" icon={<DashboardIcon />} label="Dashboard" />
               <NavItem to="/history" icon={<TimelineIcon />} label="History" />
+              <NavItem to="/connections" icon={<SensorsIcon />} label="Connections" />
             </List>
             <Divider sx={{ my: 2 }} />
             <Typography variant="overline" color="text.secondary">
@@ -78,6 +81,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/history" element={<History />} />
+            <Route path="/connections" element={<Connections />} />
             <Route path="/zones" element={<Zones />} />
             <Route path="/system" element={<System />} />
           </Routes>
